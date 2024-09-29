@@ -25,4 +25,5 @@ _______________________________________________________
 
 ### Actividades realizadas:
 
-01. [Activity 01: Install and test: opencv-contrib-python and pygame  ](01_Install_OpenCV_PyGame/README.md)
+01. [Activity 01: Install and test: opencv-contrib-python and pygame](01_Install_OpenCV_PyGame/README.md)
+02. [Activity 02: Follow an object using a color range](02_follow_using_color_detection/README.md)
