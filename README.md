@@ -9,7 +9,7 @@ This repository contains assignments and projects from the Logic and Functional 
 _______________________________________________________
 _______________________________________________________
 
-#### Student: López Lara José
+### Student: López Lara José
 
 #### Control Number: 19120194
 
@@ -23,8 +23,12 @@ _______________________________________________________
 
 <img src="assets/sdweqfwergerthwer.jpg" alt="Descripción de la imagen" style="border-radius: 40px;"/>
 
-### Actividades realizadas:
+### Actividades realizadas
 
 01. [Activity 01: Install and test: opencv-contrib-python and pygame](01_Install_OpenCV_PyGame/README.md)
 02. [Activity 02: Follow an object using a color range](02_follow_using_color_detection/README.md)
 03. [Activity 03: Face detection using haardcascades](03_testing_haardcascades_frontalcatface/README.md)
+04. [Activity 04: Dataset object detection](04_dataset_object_detection/README.md)
+05. [Activity 05: Find percent from rescale binary mask](05_find_proporcion_using_binary_puntual/README.md)
+06. [Activity 06: Found number of figures using DFS and color detection](06_count_number_of_figures/README.md)
+07. [**---> Proyect Unit N1:** Find the shortest route to maze using A* Algorithm (PyGame)](07_projectU1_shortest_route_to_maze/README.md)
