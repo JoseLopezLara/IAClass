@@ -15,6 +15,11 @@ var estatuSuelo;
 
 var nnNetwork , nnEntrenamiento, nnSalida, datosEntrenamiento=[];
 var modoAuto = false, eCompleto=false;
+var cronometro;
+var tiempoInicial;
+
+//In this array we will store all the neural network dataset
+var datosParaCSV = [];
 
 
 
@@ -56,6 +61,10 @@ function create() {
     pausaL.events.onInputUp.add(pausa, self);
     juego.input.onDown.add(mPausa, self);
 
+    // Crear el cronómetro
+    tiempoInicial = juego.time.now;
+    cronometro = juego.add.text(0, 0, '0.00', { font: '16px Arial', fill: '#ffffff' });
+    cronometro.anchor.setTo(0.5, 1);
     salto = juego.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
 
     
@@ -69,7 +78,7 @@ function enRedNeural(){
 }
 
 
-function datosDeEntrenamiento(param_entrada){
+function datosDeEntrenamiento(param_entrada){   
 
     console.log("Entrada",param_entrada[0]+" "+param_entrada[1]);
     nnSalida = nnNetwork.activate(param_entrada);
@@ -175,8 +184,22 @@ function update() {
                 'output':  [estatusAire , estatuSuelo ]  
         });
 
+        // Define jump status
+        var estatusSalto = (estatusAire === 1 && estatuSuelo === 0) ? 1 : 0;
+
+        // push to CSV dataset
+        datosParaCSV.push([despBala, velocidadBala, estatusSalto]);
+        
+
         console.log("Desplazamiento Bala, Velocidad Bala, Estatus, Estatus: ",
             despBala + " " +velocidadBala + " "+ estatusAire+" "+  estatuSuelo);
+        // Actualizar el cronómetro
+        var tiempoTranscurrido = (juego.time.now - tiempoInicial) / 1000;
+        cronometro.setText(tiempoTranscurrido.toFixed(2));
+
+        // Actualizar la posición del cronómetro para que siga al jugador
+        cronometro.x = jugador.x + jugador.width / 2;
+        cronometro.y = jugador.y - 10;
    }
 
 }
@@ -190,6 +213,7 @@ function disparo(){
 }
 
 function colisionH(){
+    exportarCSV();  // Exportar los datos antes de pausar
     pausa();
 }
 
@@ -199,4 +223,32 @@ function velocidadRandom(min, max) {
 
 function render(){
 
+}
+function exportarCSV() {
+    let csvContent = "data:text/csv;charset=utf-8,";
+
+    // Añadir encabezados
+    csvContent += "Desplazamiento Bala,Velocidad Bala,Estatus Salto\n";
+
+    // Añadir datos
+    datosParaCSV.forEach(function(rowArray) {
+        let row = rowArray.join(",");
+        csvContent += row + "\n";
+    });
+
+    // Crear el enlace de descarga
+    var encodedUri = encodeURI(csvContent);
+    var link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+
+    // Generar timestamp para el nombre del archivo
+    var timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+    link.setAttribute("download", "datos_entrenamiento_" + timestamp + ".csv");
+    document.body.appendChild(link);
+
+    // Descargar el archivo
+    link.click();
+
+    // Limpiar el array después de exportar
+    datosParaCSV = [];
 }
