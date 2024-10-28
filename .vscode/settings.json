@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "*.embeddedhtml": "html",
+        "*.pl": "prolog",
+        "*.css": "tailwindcss",
+        "math.h": "c"
+    }
+}
