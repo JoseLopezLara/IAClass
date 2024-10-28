@@ -4,13 +4,13 @@
 
 ## **Shortest route to make**
 
-### Made In: JavaScript
+### Made In: C
 
-#### Activity number: 09
+#### Activity number: 11
 
 #### **DESCRIPTION:**
 
-#### For this activity we have to analize desitions tree using the diferents datasets created in exercise number 09
+#### I hsve to modify the perceptron to it recive XOR
 
 ________________________________________________________
 ________________________________________________________
@@ -39,80 +39,152 @@ ________________________________________________________
 
 ### **Code used**
 
-```python
-import pandas as pd
-from sklearn.model_selection import train_test_split
-from sklearn.tree import DecisionTreeClassifier, export_graphviz
-import graphviz
+```c
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
 
-# Cargar el dataset
+#define epoca 15000
+#define K 0.03f 
 
-# csv_file_name = 'DATASET1-ME-DEJO-PERDER-AL-INICIO'
-# csv_file_name = 'DATASET2-JUEGO-IRREGULAR-5SEG'
-# csv_file_name = 'DATASET3-JUEGO-REGULAR-25SEG'
-csv_file_name = 'DATASET4-JUEGO-IRREGULAR-SALTOS-DOBLES-25SEG'
-# csv_file_name = 'DATASET5-JUGO-REGULAR-50SEG'
+//0.00000
+//Funcion de Entrenamiento Perceptron
+float EntNt(float, float, float  );
+//Funcion para las salidas 
+float InitNt(float, float);
 
-file_path = 'C:/git/IAClass/10_graph_desition_tree/datasets/' + csv_file_name + '.csv'
+//Sigmoide
+float sigmoide(float);
+//pesos aleatorios
+void pesos_initNt();
 
-dataset = pd.read_csv(file_path)
+float Pesos[2];	
+float bias=0.5f;
+float Error;
+ //                 1          1          1
+ //                 0          1         0           
+ //                 1          0         0
+ //                0          0          0
+float EntNt( float x0, float x1, float target )
+{
+  
+//printf("x0=%f, x1=%f, t %f \n" ,x0, x1,  target );
+  
+  float net = 0;
+  float out = 0;
+  float delta[2];  //Es la variacion de los pesos sinapticos
+  //float Error;
+   
+  net = Pesos[0]*x0 + Pesos[1]*x1 - bias;
+  net = sigmoide( net );
+   
+  Error = target - net;
+  //printf("Error funcion %f \n", Error); 
+  bias -= K*Error;  //Como el bias es siempre 1, pongo que 
+                    //el bias incluye ya su peso sinaptico
+   
+  delta[0] = K*Error * x0;  //la variacion de los pesos sinapticos corresponde 
+  delta[1] = K*Error * x1;  //al error cometido, por la entrada correspondiente
+    
+   
+  Pesos[0] += delta[0];  //Se ajustan los nuevos valores
+  Pesos[1] += delta[1];  //de los pesos sinapticos
 
-# Eliminar columnas innecesarias (como la vacía "Unnamed: 3")
-#dataset = dataset.drop(columns=['Unnamed: 3'])
+   
+  out=net;
+  return out;
+}
+ 
 
-# Definir características (X) y etiquetas (y)
-X = dataset.iloc[:, :2]  # Las dos primeras columnas son las características
-y = dataset.iloc[:, 2]   # La tercera columna es la etiqueta
+ 
+float InitNt( float x0, float x1 )
+{
+  float net = 0;
+  float out = 0;
+//Pesos de cada epoca
+//Peso 1 = 30.753101
+//Peso 2 = 30.780966
+//BiasBias = 61.583714
+//Resultados 
+//  net = 1.23*x0 + 2.4*x1+23;
+//Peso 1 = 989.755493
+//Peso 2 = -1407.284180
+//Bias = 989.755981 
 
-# Dividir los datos en conjunto de entrenamiento y prueba
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+net = 70.934807*x0 + 93.935219*x1 - 187.886169 ;
 
-# Crear el clasificador de Árbol de Decisión | ESTA CLASE GENERA UN ARBOL DE DESICIÓN PARA PODER ENTENAR EL MODELO
-clf = DecisionTreeClassifier()
+  //net = 316.518982*x0 + 316.522095*x1-633.045837;
+  net=sigmoide( net );
+   
+  out=net;
+  return out;
+}
 
-# Entrenar el modelo | FIT ES LO QUE SE UTILIZA PARA GENERAR EL ENTRENAMIENTO
-clf.fit(X_train, y_train)
+ 
+ 
+void pesos_initNt(void)
+{
+int i;
+  for(  i = 0; i < 2; i++ )
+  {
+    Pesos[i] = (float)rand()/RAND_MAX;
+  }
+}
+ 
+float sigmoide( float s ){
+  return (1/(1+ (-1*s)));
+}
 
-# Exportar el árbol de decisión en formato DOT para su visualización
-# Parámetros de export_graphviz():
-# - clf: El clasificador de árbol de decisión entrenado.
-# - out_file=None: Indica que el resultado se devuelve como una cadena en lugar de escribirse en un archivo.
-# - feature_names=['Feature 1', 'Feature 2']: Nombra las características. En tu caso, corresponden a 'Desplazamiento Bala' y 'Velocidad Bala'.
-# - class_names=['Clase 0', 'Clase 1']: Nombra las clases. Aquí, 'Clase 0' probablemente significa "no saltar" y 'Clase 1' "saltar".
-# - filled=True: Colorea los nodos según la clase mayoritaria.
-# - rounded=True: Hace que los nodos tengan esquinas redondeadas.
-# - special_characters=True: Permite el uso de caracteres especiales en las etiquetas de los nodos.
-dot_data = export_graphviz(clf, out_file=None, 
-                           feature_names=['D. Bala', 'V. Bala'],  
-                           class_names=['C. 0 (Suelo)', 'C. 1 (Salto)'],    
-                           filled=True, rounded=True,  
-                           special_characters=True)  
+int main(){
+  int i=0;
+  float apr;
+  pesos_initNt();
+  
+ while(i<epoca){
+    
+    printf("------------------------\n");
+    printf("Salida Entrenamiento Epoco %d \n", i);
+    apr=EntNt(1,1,0);
+    printf("1,1=%f\n",apr);
+    // apr=EntNt(1,0,1);
+    // printf("1,0=%f\n",apr);
+    apr=EntNt(0,1,1);
+    printf("0,1=%f\n",apr);
+    apr=EntNt(0,1,1);
+    printf("0,1=%f\n",apr);
+    apr=EntNt(0,0,0);
+    printf("0,0=%f\n",apr);
+    printf("\n"); 
+    printf("Pesos de cada epoca\n");
+    printf("Peso 0 = %f\n", Pesos[0]);
+    printf("Peso 1 = %f\n", Pesos[1]);
+  
+    printf("Bias = %f \n",bias);
+	printf("Error %f\n ",Error  );
+	printf("------------------------\n"); 
+	i++;   
+/*
 
-# Crear el gráfico con graphviz
-graph = graphviz.Source(dot_data)
+    printf("Resultados\n");
+    apr=InitNt(1,1);
+    printf("1,1=%f\n",apr);
+    apr=InitNt(1,0);
+    printf("1,0=%f\n",apr);
+    apr=InitNt(0,1);
+    printf("0,1=%f\n",apr);
+    apr=InitNt(0,0);
+    printf("0,0=%f\n",apr);
+*/
 
-# Mostrar el gráfico
-graph.render("decision_tree")  # Esto guarda el gráfico como 'decision_tree.pdf' en el directorio de trabajo
-# Mostrar el gráfico
-graph.view()
+}
+
+  return 0;
+}
+
 
 ```
 
-### Interpretation
 
-Any node represents the  decision of the tree. It is checking if the bullet is more than X units (Distance or velocity)  from the player. If it is, it slightly favors the decision not to jump (Class 0) or jump (Clas 1).
+**XOR TEST**
+![image](image.png)
 
-**For dataset: DATASET1-ME-DEJO-PERDER-AL-INICIO**
-![image](image1.png)
-
-**For dataset: DATASET2-JUEGO-IRREGULAR-5SEG**
-![image](image2.png)
-
-**For dataset: DATASET3-JUEGO-REGULAR-25SEG**
-![image](image3.png)
-
-**For dataset: DATASET4-JUEGO-IRREGULAR-SALTOS-DOBLES-25SEG**
-![image](image4.png)
-
-**For dataset: DATASET5-JUGO-REGULAR-50SEG**
-![image](image5.png)
