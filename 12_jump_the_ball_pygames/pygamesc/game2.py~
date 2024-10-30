@@ -1,0 +1,87 @@
+import pygame
+import random
+
+# Inicializar Pygame
+pygame.init()
+
+# Dimensiones de la pantalla
+w, h = 800, 400
+pantalla = pygame.display.set_mode((w, h))
+pygame.display.set_caption("Juego: Disparo de Bala")
+
+# Colores
+BLANCO = (255, 255, 255)
+
+# Variables del jugador, bala, etc.
+jugador = None
+bala = None
+
+salto = False
+
+# Cargar las imágenes
+jugador_img = pygame.image.load('assets/sprites/mono_frame_1.png')  # Imagen estática del jugador
+bala_img = pygame.image.load('assets/sprites/purple_ball.png')
+
+# Crear el rectángulo del jugador y de la bala
+jugador = pygame.Rect(50, h - 48, 32, 48)
+bala = pygame.Rect(w - 50, h - 60, 16, 16)
+
+# Variables para la bala
+velocidad_bala = -5  # Velocidad de la bala hacia la izquierda
+bala_disparada = False
+
+def disparar_bala():
+    global bala_disparada, velocidad_bala
+    if not bala_disparada:
+        velocidad_bala = random.randint(-8, -3)  # Velocidad aleatoria negativa para la bala
+        bala_disparada = True
+
+def reset_bala():
+    global bala, bala_disparada
+    bala.x = w - 50  # Reiniciar la posición de la bala
+    bala_disparada = False
+
+def update():
+    global bala, velocidad_bala
+
+    # Limpiar la pantalla
+    pantalla.fill(BLANCO)
+
+    # Dibujar el jugador
+    pantalla.blit(jugador_img, (jugador.x, jugador.y))
+
+    # Mover y dibujar la bala
+    if bala_disparada:
+        bala.x += velocidad_bala
+
+    # Si la bala sale de la pantalla, reiniciar su posición
+    if bala.x < 0:
+        reset_bala()
+
+    pantalla.blit(bala_img, (bala.x, bala.y))
+
+def main():
+    global salto, bala_disparada
+
+    reloj = pygame.time.Clock()
+    correr = True
+
+    while correr:
+        for evento in pygame.event.get():
+            if evento.type == pygame.QUIT:
+                correr = False
+
+        # Actualizar el juego
+        if not bala_disparada:
+            disparar_bala()  # Disparar la bala una vez que no está en movimiento
+
+        update()
+
+        # Actualizar la pantalla
+        pygame.display.flip()
+        reloj.tick(30)  # Limitar el juego a 30 FPS
+
+    pygame.quit()
+
+if __name__ == "__main__":
+    main()

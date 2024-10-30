@@ -1,0 +1,196 @@
+import pygame
+import random
+
+# Inicializar Pygame
+pygame.init()
+
+# Dimensiones de la pantalla
+w, h = 800, 400
+pantalla = pygame.display.set_mode((w, h))
+pygame.display.set_caption("Juego: Disparo de Bala, Salto, Nave y Menú")
+
+# Colores
+BLANCO = (255, 255, 255)
+NEGRO = (0, 0, 0)
+
+# Variables del jugador, bala, nave, fondo, etc.
+jugador = None
+bala = None
+fondo = None
+nave = None
+menu = None
+
+# Variables de salto
+salto = False
+salto_altura = 15  # Velocidad inicial de salto
+gravedad = 1
+en_suelo = True
+
+# Variables de pausa y menú
+pausa = False
+fuente = pygame.font.SysFont('Arial', 24)
+menu_activo = False
+
+# Cargar las imágenes
+jugador_frames = [
+    pygame.image.load('assets/sprites/mono_frame_1.png'),
+    pygame.image.load('assets/sprites/mono_frame_2.png'),
+    pygame.image.load('assets/sprites/mono_frame_3.png'),
+    pygame.image.load('assets/sprites/mono_frame_4.png')
+]
+
+bala_img = pygame.image.load('assets/sprites/purple_ball.png')
+fondo_img = pygame.image.load('/mnt/data/An_infinite_scrolling_background_for_a_video_game,.png')
+nave_img = pygame.image.load('assets/game/ufo.png')
+menu_img = pygame.image.load('assets/game/menu.png')
+
+# Escalar la imagen de fondo para que coincida con el tamaño de la pantalla
+fondo_img = pygame.transform.scale(fondo_img, (w, h))
+
+# Crear el rectángulo del jugador y de la bala
+jugador = pygame.Rect(50, h - 100, 32, 48)  # Se ha subido el monito ajustando el valor de h - 100
+bala = pygame.Rect(w - 50, h - 60, 16, 16)
+nave = pygame.Rect(w - 100, h - 70, 64, 64)
+menu_rect = pygame.Rect(w // 2 - 135, h // 2 - 90, 270, 180)  # Tamaño del menú
+
+# Variables para la animación del jugador
+current_frame = 0
+frame_speed = 10  # Cuántos frames antes de cambiar a la siguiente imagen
+frame_count = 0
+
+# Variables para la bala
+velocidad_bala = -5  # Velocidad de la bala hacia la izquierda
+bala_disparada = False
+
+# Variables para el fondo en movimiento
+fondo_x1 = 0
+fondo_x2 = w
+
+# Función para disparar la bala
+def disparar_bala():
+    global bala_disparada, velocidad_bala
+    if not bala_disparada:
+        velocidad_bala = random.randint(-8, -3)  # Velocidad aleatoria negativa para la bala
+        bala_disparada = True
+
+# Función para reiniciar la posición de la bala
+def reset_bala():
+    global bala, bala_disparada
+    bala.x = w - 50  # Reiniciar la posición de la bala
+    bala_disparada = False
+
+# Función para manejar el salto
+def manejar_salto():
+    global jugador, salto, salto_altura, gravedad, en_suelo
+
+    if salto:
+        jugador.y -= salto_altura  # Mover al jugador hacia arriba
+        salto_altura -= gravedad  # Aplicar gravedad (reduce la velocidad del salto)
+
+        # Si el jugador llega al suelo, detener el salto
+        if jugador.y >= h - 100:
+            jugador.y = h - 100
+            salto = False
+            salto_altura = 15  # Restablecer la velocidad de salto
+            en_suelo = True
+
+# Función para actualizar el juego
+def update():
+    global bala, velocidad_bala, current_frame, frame_count, fondo_x1, fondo_x2
+
+    # Mover el fondo
+    fondo_x1 -= 1
+    fondo_x2 -= 1
+
+    # Si el primer fondo sale de la pantalla, lo movemos detrás del segundo
+    if fondo_x1 <= -w:
+        fondo_x1 = w
+
+    # Si el segundo fondo sale de la pantalla, lo movemos detrás del primero
+    if fondo_x2 <= -w:
+        fondo_x2 = w
+
+    # Dibujar los fondos
+    pantalla.blit(fondo_img, (fondo_x1, 0))
+    pantalla.blit(fondo_img, (fondo_x2, 0))
+
+    # Animación del jugador
+    frame_count += 1
+    if frame_count >= frame_speed:
+        current_frame = (current_frame + 1) % len(jugador_frames)
+        frame_count = 0
+
+    # Dibujar el jugador con la animación
+    pantalla.blit(jugador_frames[current_frame], (jugador.x, jugador.y))
+
+    # Dibujar la nave
+    pantalla.blit(nave_img, (nave.x, nave.y))
+
+    # Mover y dibujar la bala
+    if bala_disparada:
+        bala.x += velocidad_bala
+
+    # Si la bala sale de la pantalla, reiniciar su posición
+    if bala.x < 0:
+        reset_bala()
+
+    pantalla.blit(bala_img, (bala.x, bala.y))
+
+    # Colisión entre la bala y el jugador
+    if jugador.colliderect(bala):
+        print("Colisión detectada!")
+        pausa_juego()  # Pausar el juego en caso de colisión
+
+# Función para pausar el juego y mostrar el menú
+def pausa_juego():
+    global pausa, menu_activo
+    pausa = True
+    menu_activo = True
+    while pausa:
+        pantalla.fill(NEGRO)
+        pantalla.blit(menu_img, menu_rect.topleft)
+        pygame.display.flip()
+
+        for evento in pygame.event.get():
+            if evento.type == pygame.QUIT:
+                pygame.quit()
+                exit()
+            if evento.type == pygame.MOUSEBUTTONDOWN:
+                if menu_rect.collidepoint(evento.pos):  # Detectar si se hizo clic en el menú
+                    print("Menú clicado, reanudando juego.")
+                    pausa = False
+                    menu_activo = False
+
+def main():
+    global salto, en_suelo, bala_disparada
+
+    reloj = pygame.time.Clock()
+    correr = True
+
+    while correr:
+        for evento in pygame.event.get():
+            if evento.type == pygame.QUIT:
+                correr = False
+            if evento.type == pygame.KEYDOWN:
+                if evento.key == pygame.K_SPACE and en_suelo:  # Detectar la tecla espacio para saltar
+                    salto = True
+                    en_suelo = False
+
+        # Manejar el salto si está en proceso
+        if salto:
+            manejar_salto()
+
+        # Actualizar el juego si no está en pausa
+        if not menu_activo:
+            if not bala_disparada:
+                disparar_bala()  # Disparar la bala una vez que no está en movimiento
+            update()
+
+        # Actualizar la pantalla
+        pygame.display.flip()
+        reloj.tick(30)  # Limitar el juego a 30 FPS
+
+    pygame.quit()
+
+if __name__ == "__main__":
+    main()
