@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import ipywidgets as widgets
 from ipywidgets import interact, interactive, fixed
-
+import math
 
 directory_to_save_datasets = 'C:/git/IAClass/12_jump_the_ball_pygames/datasets/'
 last_csv_path_saved = ''
@@ -43,6 +43,8 @@ pausa = False
 fuente = pygame.font.SysFont('Arial', 24)
 menu_activo = True
 modo_auto = False  # Indica si el modo de juego es automático
+modo_2_balas = False  # Indica si el modo de juego es de 2 balas
+modo_3_balas = False  # Indica si el modo de juego es de 3 balas
 
 # Lista para guardar los datos de velocidad, distancia y salto (target)
 datos_modelo = []
@@ -78,6 +80,15 @@ frame_count = 0
 velocidad_bala = -20  # Velocidad de la bala hacia la izquierda
 bala_disparada = False
 
+bala2 = pygame.Rect(random.randint(0, w - 16), 0, 16, 16)
+velocidad_bala2 = 5  # Velocidad de la bala hacia abajo
+bala2_disparada = False
+
+bala3 = pygame.Rect(w - 16, random.randint(0, h - 16), 16, 16)
+velocidad_bala3_x = 0
+velocidad_bala3_y = 0
+bala3_disparada = False
+
 # Variables para el fondo en movimiento
 fondo_x1 = 0
 fondo_x2 = w
@@ -94,6 +105,44 @@ def reset_bala():
     global bala, bala_disparada
     bala.x = w - 50  # Reiniciar la posición de la bala
     bala_disparada = False
+
+# Función para disparar la segunda bala
+def disparar_bala2():
+    global bala2_disparada, bala2, velocidad_bala2
+    if not bala2_disparada:
+        bala2.x = random.randint(0, w - 16)
+        bala2.y = 0
+        velocidad_bala2 = random.randint(5, 15)  # Velocidad aleatoria hacia abajo
+        bala2_disparada = True
+
+# Función para reiniciar la posición de la segunda bala
+def reset_bala2():
+    global bala2, bala2_disparada
+    bala2.x = random.randint(0, w - 16)
+    bala2.y = 0
+    bala2_disparada = False
+
+# Función para disparar la tercera bala
+def disparar_bala3():
+    global bala3_disparada, bala3, velocidad_bala3_x, velocidad_bala3_y
+    if not bala3_disparada:
+        bala3.y = random.randint(0, h - 16)
+        bala3.x = w - 16
+        
+        # angule and Speed X Y 
+        angle = math.radians(180 - 25)
+        
+        speed = random.randint(10, 20)
+        velocidad_bala3_x = speed * math.cos(angle)
+        velocidad_bala3_y = speed * math.sin(angle)
+        bala3_disparada = True
+
+# Función para reiniciar la posición de la tercera bala
+def reset_bala3():
+    global bala3, bala3_disparada
+    bala3.y = random.randint(0, h - 16)
+    bala3.x = w - 16
+    bala3_disparada = False
 
 # Función para manejar el salto
 def manejar_salto():
@@ -157,6 +206,43 @@ def update():
         print("Colisión detectada!")
         reiniciar_juego()  # Terminar el juego y mostrar el menú
 
+    # Mover y dibujar la segunda bala si está en modo 2 o 3 balas
+    if modo_2_balas or modo_3_balas:
+        if bala2_disparada:
+            bala2.y += velocidad_bala2
+        else:
+            disparar_bala2()
+
+        # Si la bala2 sale de la pantalla, reiniciar su posición
+        if bala2.y > h:
+            reset_bala2()
+
+        pantalla.blit(bala_img, (bala2.x, bala2.y))
+
+        # Colisión entre la bala2 y el jugador
+        if jugador.colliderect(bala2):
+            print("Colisión con bala 2 detectada!")
+            reiniciar_juego()
+
+    # Mover y dibujar la tercera bala si está en modo 3 balas
+    if modo_3_balas:
+        if bala3_disparada:
+            bala3.x += velocidad_bala3_x
+            bala3.y += velocidad_bala3_y
+        else:
+            disparar_bala3()
+
+        # Si la bala3 sale de la pantalla, reiniciar su posición
+        if bala3.x < 0 or bala3.y < 0 or bala3.y > h:
+            reset_bala3()
+
+        pantalla.blit(bala_img, (bala3.x, bala3.y))
+
+        # Colisión entre la bala3 y el jugador
+        if jugador.colliderect(bala3):
+            print("Colisión con bala 3 detectada!")
+            reiniciar_juego()
+
 # Función para guardar datos del modelo en modo manual
 def guardar_datos():
     global jugador, bala, velocidad_bala, salto
@@ -175,26 +261,24 @@ def pausa_juego():
         print("Juego reanudado.")
 
 def trace_dataset():
-
     if(last_csv_path_saved == ''):
         print("Primero debe de guardar el data set.")  
-        print("La ruta invalida es: ", last_csv_path_saved)
+        print("La ruta inválida es: ", last_csv_path_saved)
         return  
-    
+
     df = pd.read_csv(last_csv_path_saved)
 
-    # Verify if the columns don't contain text. If so, convert them to numeric or replace them with NaN
+    # Verificar si las columnas no contienen texto. Si es así, convertirlas a numéricas o reemplazarlas con NaN
     df['Velocidad Bala'] = pd.to_numeric(df['Velocidad Bala'], errors='coerce')
     df['Desplazamiento Bala'] = pd.to_numeric(df['Desplazamiento Bala'], errors='coerce')
     df['Estatus Salto'] = pd.to_numeric(df['Estatus Salto'], errors='coerce')
 
-
-    # Replace negative values with his absolute value. Before this, we delete NaN values
+    # Reemplazar valores negativos con su valor absoluto. Antes de esto, eliminamos valores NaN
     df = df.dropna()
     df['Velocidad Bala'] = df['Velocidad Bala'].abs()
     df['Desplazamiento Bala'] = df['Desplazamiento Bala'].abs()
 
-    # Stadistics of the data
+    # Estadísticas de los datos
     print("\n------------ DATA EXAMPLE ------------")
     print(df.head())
     print("\n------------ TYPES OF PARAMS ------------")
@@ -204,7 +288,7 @@ def trace_dataset():
     print("\n------------ CORRELATIONS ------------")
     print(df.corr())
 
-    # Create 3d chart and and 3d grid. Then, graph the data, additional labels and finally a colorbar
+    # Crear gráfico 3D y una cuadrícula 3D. Luego, graficar los datos, etiquetas adicionales y finalmente una barra de color
     fig = plt.figure(figsize=(10, 8))
     ax = fig.add_subplot(111, projection='3d')
     scatter = ax.scatter(df['Desplazamiento Bala'], 
@@ -221,9 +305,8 @@ def trace_dataset():
     plt.colorbar(scatter, label='Estatus Salto')
     plt.show()
 
-    # 2D grafic scatter.
+    # Gráfico de dispersión 2D.
     plt.figure(figsize=(10, 6))
-    plt.scatter(df['Desplazamiento Bala'], df['Velocidad Bala'], c=df['Estatus Salto'], cmap='viridis')
     plt.scatter(df['Desplazamiento Bala'], df['Velocidad Bala'], c=df['Estatus Salto'], cmap='viridis')
     plt.xlabel('Desplazamiento Bala')
     plt.ylabel('Velocidad Bala')
@@ -259,18 +342,19 @@ def save_data_set(datos_modelo):
     except Exception as e:
         print(f"Error al guardar el dataset: {e}")
 
-
 def print_menu_options():
     lineas = [
         "Presiona 'A' para Auto",
         "'M' para Manual",
         "'G' Para almacenar dataset",
         "'T' Para graficar dataset",
+        "Presiona '2' para modo 2 balas",
+        "Presiona '3' para modo 3 balas",
         "",
         "'Q' para Salir"
     ]
     
-    # Init position
+    # Posición inicial
     x = w // 4
     y = h // 2 - (len(lineas) * 20)  # Ajusta el desplazamiento vertical según el número de líneas
     
@@ -282,7 +366,7 @@ def print_menu_options():
 
 # Función para mostrar el menú y seleccionar el modo de juego
 def mostrar_menu():
-    global menu_activo, modo_auto
+    global menu_activo, modo_auto, modo_2_balas, modo_3_balas
     pantalla.fill(NEGRO)
     
     print_menu_options()
@@ -297,15 +381,29 @@ def mostrar_menu():
             if evento.type == pygame.KEYDOWN:
                 if evento.key == pygame.K_a:
                     modo_auto = True
+                    modo_2_balas = False
+                    modo_3_balas = False
                     menu_activo = False
                 elif evento.key == pygame.K_m:
                     modo_auto = False
+                    modo_2_balas = False
+                    modo_3_balas = False
                     menu_activo = False
                 elif evento.key == pygame.K_g:
                     save_data_set(datos_modelo)
                     menu_activo = True
                 elif evento.key == pygame.K_t:
                     trace_dataset()
+                elif evento.key == pygame.K_2:
+                    modo_auto = False
+                    modo_2_balas = True
+                    modo_3_balas = False
+                    menu_activo = False
+                elif evento.key == pygame.K_3:
+                    modo_auto = False
+                    modo_2_balas = False
+                    modo_3_balas = True
+                    menu_activo = False
                 elif evento.key == pygame.K_q:
                     print("Juego terminado. Datos recopilados:", datos_modelo)
                     pygame.quit()
@@ -313,7 +411,7 @@ def mostrar_menu():
 
 # Función para reiniciar el juego tras la colisión
 def reiniciar_juego():
-    global menu_activo, jugador, bala, nave, bala_disparada, salto, en_suelo
+    global menu_activo, jugador, bala, nave, bala_disparada, salto, en_suelo, bala2_disparada, bala3_disparada
     menu_activo = True  # Activar de nuevo el menú
     jugador.x, jugador.y = 50, h - 100  # Reiniciar posición del jugador
     bala.x = w - 50  # Reiniciar posición de la bala
@@ -321,6 +419,14 @@ def reiniciar_juego():
     bala_disparada = False
     salto = False
     en_suelo = True
+    # Reiniciar la segunda bala
+    bala2.x = random.randint(0, w - 16)
+    bala2.y = 0
+    bala2_disparada = False
+    # Reiniciar la tercera bala
+    bala3.x = w - 16
+    bala3.y = random.randint(0, h - 16)
+    bala3_disparada = False
     # Mostrar los datos recopilados hasta el momento
     print("Datos recopilados para el modelo: ", datos_modelo)
     mostrar_menu()  # Mostrar el menú de nuevo para seleccionar modo
@@ -341,6 +447,7 @@ def main():
                     print('saltando...')
                     salto = True
                     en_suelo = False
+                
                 if evento.key == pygame.K_p:  # Presiona 'p' para pausar el juego
                     pausa_juego()
                 if evento.key == pygame.K_q:  # Presiona 'q' para terminar el juego
@@ -355,6 +462,19 @@ def main():
                     manejar_salto()
                 # Guardar los datos si estamos en modo manual
                 guardar_datos()
+
+            # Move right or left
+            keys = pygame.key.get_pressed()
+            if keys[pygame.K_LEFT]:
+                jugador.x -= 5  
+            if keys[pygame.K_RIGHT]:
+                jugador.x += 5  
+
+            # Mantener al jugador dentro de los límites de la pantalla
+            if jugador.x < 0:
+                jugador.x = 0
+            if jugador.x > w - jugador.width:
+                jugador.x = w - jugador.width
 
             # Actualizar el juego
             if not bala_disparada:
