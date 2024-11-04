@@ -9,9 +9,14 @@ from mpl_toolkits.mplot3d import Axes3D
 import ipywidgets as widgets
 from ipywidgets import interact, interactive, fixed
 import math
+from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier, export_graphviz
+import graphviz
 
 directory_to_save_datasets = 'C:/git/IAClass/12_jump_the_ball_pygames/datasets/'
-last_csv_path_saved = ''
+last_csv_path_saved_for_horizontal_ball = ''
+last_csv_path_saved_for_vertical_ball = ''
+last_csv_path_saved_for_diagonal_ball = ''
 
 # Inicializar Pygame
 pygame.init()
@@ -42,12 +47,15 @@ en_suelo = True
 pausa = False
 fuente = pygame.font.SysFont('Arial', 24)
 menu_activo = True
-modo_auto = False  # Indica si el modo de juego es automático
-modo_2_balas = False  # Indica si el modo de juego es de 2 balas
-modo_3_balas = False  # Indica si el modo de juego es de 3 balas
+modo_manual = False
+modo_auto = False  
+modo_2_balas = False 
+modo_3_balas = False 
 
 # Lista para guardar los datos de velocidad, distancia y salto (target)
 datos_modelo = []
+datos_modelo_vertical_ball = []
+datos_modelo_diagonal_ball = []
 
 # Cargar las imágenes
 jugador_frames = [
@@ -93,11 +101,68 @@ bala3_disparada = False
 fondo_x1 = 0
 fondo_x2 = w
 
+
+def generate_desition_treee():
+    # Cargar el dataset
+    global last_csv_path_saved_for_horizontal_ball
+
+    if last_csv_path_saved_for_horizontal_ball == '':
+        print('Primero debe de guardar el data set')
+        return
+
+    # Leer el CSV sin encabezados
+    dataset = pd.read_csv(last_csv_path_saved_for_horizontal_ball, header=None)
+
+    # Eliminar la primera fila que contiene encabezados incorrectos
+    dataset_cleaned = dataset.iloc[1:].reset_index(drop=True)
+    dataset_cleaned = dataset_cleaned.dropna()
+
+    # Guardar el CSV limpio sin índice
+    cleaned_csv_path = last_csv_path_saved_for_horizontal_ball.replace('.csv', '_cleaned.csv')
+    dataset_cleaned.to_csv(cleaned_csv_path, index=False, header=False)
+    print(f"CSV limpio guardado en: {cleaned_csv_path}")
+
+    # Definir características (X) y etiquetas (y)
+    X = dataset_cleaned.iloc[:, :2]  # Las dos primeras columnas son las características
+    y = dataset_cleaned.iloc[:, 2]   # La tercera columna es la etiqueta
+
+    # Dividir los datos en conjunto de entrenamiento y prueba
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+    # Crear el clasificador de Árbol de Decisión | ESTA CLASE GENERA UN ARBOL DE DESICIÓN PARA PODER ENTENAR EL MODELO
+    clf = DecisionTreeClassifier()
+
+    # Entrenar el modelo | FIT ES LO QUE SE UTILIZA PARA GENERAR EL ENTRENAMIENTO
+    clf.fit(X_train, y_train)
+
+    # Exportar el árbol de decisión en formato DOT para su visualización
+    # Parámetros de export_graphviz():
+    # - clf: El clasificador de árbol de decisión entrenado.
+    # - out_file=None: Indica que el resultado se devuelve como una cadena en lugar de escribirse en un archivo.
+    # - feature_names=['Feature 1', 'Feature 2']: Nombra las características. En tu caso, corresponden a 'Desplazamiento Bala' y 'Velocidad Bala'.
+    # - class_names=['Clase 0', 'Clase 1']: Nombra las clases. Aquí, 'Clase 0' probablemente significa "no saltar" y 'Clase 1' "saltar".
+    # - filled=True: Colorea los nodos según la clase mayoritaria.
+    # - rounded=True: Hace que los nodos tengan esquinas redondeadas.
+    # - special_characters=True: Permite el uso de caracteres especiales en las etiquetas de los nodos.
+    dot_data = export_graphviz(clf, out_file=None, 
+                            feature_names=['V. Bala', 'D. Bala'],  
+                            class_names=['C. 0 (Suelo)', 'C. 1 (Salto)'],    
+                            filled=True, rounded=True,  
+                            special_characters=True)  
+
+    # Crear el gráfico con graphviz
+    graph = graphviz.Source(dot_data)
+
+    # Mostrar el gráfico
+    graph.render("decision_tree")  # Esto guarda el gráfico como 'decision_tree.pdf' en el directorio de trabajo
+    # Mostrar el gráfico
+    graph.view()
+
 # Función para disparar la bala
 def disparar_bala():
     global bala_disparada, velocidad_bala
     if not bala_disparada:
-        velocidad_bala = random.randint(-20, -8)  # Velocidad aleatoria negativa para la bala
+        velocidad_bala = random.randint(-10, -4)  # Velocidad aleatoria negativa para la bala
         bala_disparada = True
 
 # Función para reiniciar la posición de la bala
@@ -112,7 +177,7 @@ def disparar_bala2():
     if not bala2_disparada:
         bala2.x = random.randint(0, w - 16)
         bala2.y = 0
-        velocidad_bala2 = random.randint(5, 15)  # Velocidad aleatoria hacia abajo
+        velocidad_bala2 = random.randint(3, 7)  # Velocidad aleatoria hacia abajo
         bala2_disparada = True
 
 # Función para reiniciar la posición de la segunda bala
@@ -132,7 +197,7 @@ def disparar_bala3():
         # angule and Speed X Y 
         angle = math.radians(180 - 25)
         
-        speed = random.randint(10, 20)
+        speed = random.randint(5, 10)
         velocidad_bala3_x = speed * math.cos(angle)
         velocidad_bala3_y = speed * math.sin(angle)
         bala3_disparada = True
@@ -245,11 +310,42 @@ def update():
 
 # Función para guardar datos del modelo en modo manual
 def guardar_datos():
-    global jugador, bala, velocidad_bala, salto
-    distancia = abs(jugador.x - bala.x)
-    salto_hecho = 1 if salto else 0  # 1 si saltó, 0 si no saltó
-    # Guardar velocidad de la bala, distancia al jugador y si saltó o no
-    datos_modelo.append((velocidad_bala, distancia, salto_hecho))
+    global jugador, salto
+    global bala, velocidad_bala
+    global bala2, velocidad_bala2
+    global bala3, velocidad_bala3_x, velocidad_bala3_y
+    
+    global modo_manual, modo_2_balas, modo_3_balas
+    
+    if modo_manual:
+        distancia = abs(jugador.x - bala.x)
+        salto_hecho = 1 if salto else 0  # 1 si saltó, 0 si no saltó
+        # Guardar velocidad de la bala, distancia al jugador y si saltó o no
+        datos_modelo.append((velocidad_bala, distancia, salto_hecho))
+    
+    if modo_2_balas:
+        distancia = abs(jugador.x - bala.x)
+        salto_hecho = 1 if salto else 0  # 1 si saltó, 0 si no saltó
+        # Guardar velocidad de la bala, distancia al jugador y si saltó o no
+        datos_modelo.append((velocidad_bala, distancia, salto_hecho))
+        
+        distanciaY = abs(jugador.y - bala2.y)
+        datos_modelo_vertical_ball.append((velocidad_bala2, distanciaY))
+    
+    if modo_3_balas:    
+        distancia = abs(jugador.x - bala.x)
+        salto_hecho = 1 if salto else 0  # 1 si saltó, 0 si no saltó
+        # Guardar velocidad de la bala, distancia al jugador y si saltó o no
+        datos_modelo.append((velocidad_bala, distancia, salto_hecho))
+        
+        distanciaY = abs(jugador.y - bala2.y)
+        datos_modelo_vertical_ball.append((velocidad_bala2, distanciaY))
+        
+        # Calcular la distancia hipotenusa entre el jugador y la bala3
+        distancia_x_bala3 = jugador.x - bala3.x
+        distancia_y_bala3 = jugador.y - bala3.y
+        distancia_hipotenusa = math.sqrt(distancia_x_bala3**2 + distancia_y_bala3**2)
+        datos_modelo_diagonal_ball.append((velocidad_bala3_x, velocidad_bala3_y, distancia_hipotenusa))
 
 # Función para pausar el juego y guardar los datos
 def pausa_juego():
@@ -261,12 +357,12 @@ def pausa_juego():
         print("Juego reanudado.")
 
 def trace_dataset():
-    if(last_csv_path_saved == ''):
+    if(last_csv_path_saved_for_horizontal_ball == ''):
         print("Primero debe de guardar el data set.")  
-        print("La ruta inválida es: ", last_csv_path_saved)
+        print("La ruta inválida es: ", last_csv_path_saved_for_horizontal_ball)
         return  
 
-    df = pd.read_csv(last_csv_path_saved)
+    df = pd.read_csv(last_csv_path_saved_for_horizontal_ball)
 
     # Verificar si las columnas no contienen texto. Si es así, convertirlas a numéricas o reemplazarlas con NaN
     df['Velocidad Bala'] = pd.to_numeric(df['Velocidad Bala'], errors='coerce')
@@ -314,33 +410,131 @@ def trace_dataset():
     plt.colorbar(label='Estatus Salto')
     plt.show()
 
-def save_data_set(datos_modelo):
-    global last_csv_path_saved
-    # Generar un nombre de archivo único con la fecha y hora actual
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = f"dataset_{timestamp}.csv"
+def save_data_set():
+    global last_csv_path_saved_for_horizontal_ball, last_csv_path_saved_for_vertical_ball, last_csv_path_saved_for_diagonal_ball
     
-    # Crear la ruta completa del archivo
-    file_path = os.path.join(directory_to_save_datasets, filename)
+    if modo_manual:
+        # Generar un nombre de archivo único con la fecha y hora actual
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename_horizontal_ball = f"dataset_horizontal_ball_{timestamp}.csv"
+        
+        # Crear la ruta completa del archivo
+        file_path_horizontal_ball = os.path.join(directory_to_save_datasets, filename_horizontal_ball)
+        
+        try:
+            # Asegurarse de que el directorio existe
+            os.makedirs(directory_to_save_datasets, exist_ok=True)
+            
+            with open(file_path_horizontal_ball, 'w', newline='') as csvfile:
+                writer = csv.writer(csvfile)
+                
+                # Escribir el encabezado
+                writer.writerow(["Velocidad Bala", "Desplazamiento Bala", "Estatus Salto"])
+                
+                # Escribir los datos
+                for dato in datos_modelo:
+                    writer.writerow(dato)
+            
+            last_csv_path_saved_for_horizontal_ball = file_path_horizontal_ball 
+            print(f"Dataset guardado exitosamente como '{last_csv_path_saved_for_horizontal_ball}'")
+        except Exception as e:
+            print(f"Error al guardar el dataset: {e}")
+            
+    if modo_2_balas:
+        # Generar un nombre de archivo único con la fecha y hora actual
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename_horizontal_ball = f"dataset_horizontal_ball_{timestamp}.csv"
+        filename_vertical_ball = f"dataset_vertical_ball_{timestamp}.csv"
+        
+        # Crear la ruta completa del archivo
+        file_path_horizontal_ball = os.path.join(directory_to_save_datasets, filename_horizontal_ball)
+        file_path_vertical_ball = os.path.join(directory_to_save_datasets, filename_vertical_ball)
+        
+        try:
+            # Asegurarse de que el directorio existe
+            os.makedirs(directory_to_save_datasets, exist_ok=True)
+            
+            with open(file_path_horizontal_ball, 'w', newline='') as csvfile:
+                writer = csv.writer(csvfile)
+                
+                # Escribir el encabezado
+                writer.writerow(["Velocidad Bala", "Desplazamiento Bala", "Estatus Salto"])
+                
+                # Escribir los datos
+                for dato in datos_modelo:
+                    writer.writerow(dato)
+            
+            with open(file_path_vertical_ball, 'w', newline='') as csvfile:
+                writer = csv.writer(csvfile)
+                
+                # Escribir el encabezado
+                writer.writerow(["Velocidad Bala", "Desplazamiento Bala Y", ""])
+                
+                # Escribir los datos
+                for dato in datos_modelo_vertical_ball:
+                    writer.writerow(dato)
+            
+            last_csv_path_saved_for_horizontal_ball = file_path_horizontal_ball 
+            last_csv_path_saved_for_vertical_ball = file_path_vertical_ball 
+            print(f"Dataset guardado exitosamente como '{last_csv_path_saved_for_horizontal_ball}'")
+            print(f"Dataset guardado exitosamente como '{last_csv_path_saved_for_vertical_ball}'")
+        except Exception as e:
+            print(f"Error al guardar el dataset: {e}")
     
-    try:
-        # Asegurarse de que el directorio existe
-        os.makedirs(directory_to_save_datasets, exist_ok=True)
+    if modo_3_balas:
+        # Generar un nombre de archivo único con la fecha y hora actual
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename_horizontal_ball = f"dataset_horizontal_ball_{timestamp}.csv"
+        filename_vertical_ball = f"dataset_vertical_ball_{timestamp}.csv"
+        filename_diagonal_ball = f"dataset_diagonal_ball_{timestamp}.csv"
         
-        with open(file_path, 'w', newline='') as csvfile:
-            writer = csv.writer(csvfile)
-            
-            # Escribir el encabezado
-            writer.writerow(["Velocidad Bala", "Desplazamiento Bala", "Estatus Salto"])
-            
-            # Escribir los datos
-            for dato in datos_modelo:
-                writer.writerow(dato)
+        # Crear la ruta completa del archivo
+        file_path_horizontal_ball = os.path.join(directory_to_save_datasets, filename_horizontal_ball)
+        file_path_vertical_ball = os.path.join(directory_to_save_datasets, filename_vertical_ball)
+        file_path_diagonal_ball = os.path.join(directory_to_save_datasets, filename_diagonal_ball)
         
-        last_csv_path_saved = file_path 
-        print(f"Dataset guardado exitosamente como '{last_csv_path_saved}'")
-    except Exception as e:
-        print(f"Error al guardar el dataset: {e}")
+        try:
+            # Asegurarse de que el directorio existe
+            os.makedirs(directory_to_save_datasets, exist_ok=True)
+            
+            with open(file_path_horizontal_ball, 'w', newline='') as csvfile:
+                writer = csv.writer(csvfile)
+                
+                # Escribir el encabezado
+                writer.writerow(["Velocidad Bala", "Desplazamiento Bala", "Estatus Salto"])
+                
+                # Escribir los datos
+                for dato in datos_modelo:
+                    writer.writerow(dato)
+            
+            with open(file_path_vertical_ball, 'w', newline='') as csvfile:
+                writer = csv.writer(csvfile)
+                
+                # Escribir el encabezado
+                writer.writerow(["Velocidad Bala", "Desplazamiento Bala Y", ""])
+                
+                # Escribir los datos
+                for dato in datos_modelo_vertical_ball:
+                    writer.writerow(dato)
+                    
+            with open(file_path_diagonal_ball, 'w', newline='') as csvfile:
+                writer = csv.writer(csvfile)
+                
+                # Escribir el encabezado
+                writer.writerow(["Velocidad Bala X", "Velocidad Bala Y", "Desplazamiento Hipotenusa"])
+                
+                # Escribir los datos
+                for dato in datos_modelo_diagonal_ball:
+                    writer.writerow(dato)
+            
+            last_csv_path_saved_for_horizontal_ball = file_path_horizontal_ball 
+            last_csv_path_saved_for_vertical_ball = file_path_vertical_ball 
+            last_csv_path_saved_for_diagonal_ball = file_path_diagonal_ball 
+            print(f"Dataset guardado exitosamente como '{last_csv_path_saved_for_horizontal_ball}'")
+            print(f"Dataset guardado exitosamente como '{last_csv_path_saved_for_vertical_ball}'")
+            print(f"Dataset guardado exitosamente como '{last_csv_path_saved_for_diagonal_ball}'")
+        except Exception as e:
+            print(f"Error al guardar el dataset: {e}")
 
 def print_menu_options():
     lineas = [
@@ -366,7 +560,7 @@ def print_menu_options():
 
 # Función para mostrar el menú y seleccionar el modo de juego
 def mostrar_menu():
-    global menu_activo, modo_auto, modo_2_balas, modo_3_balas
+    global menu_activo, modo_auto, modo_manual, modo_2_balas, modo_3_balas
     pantalla.fill(NEGRO)
     
     print_menu_options()
@@ -381,26 +575,32 @@ def mostrar_menu():
             if evento.type == pygame.KEYDOWN:
                 if evento.key == pygame.K_a:
                     modo_auto = True
+                    modo_manual = False
                     modo_2_balas = False
                     modo_3_balas = False
                     menu_activo = False
+                    print('- - - - Option auto selected - - - -')
+                    generate_desition_treee()
                 elif evento.key == pygame.K_m:
                     modo_auto = False
+                    modo_manual = True
                     modo_2_balas = False
                     modo_3_balas = False
                     menu_activo = False
                 elif evento.key == pygame.K_g:
-                    save_data_set(datos_modelo)
+                    save_data_set()
                     menu_activo = True
                 elif evento.key == pygame.K_t:
                     trace_dataset()
                 elif evento.key == pygame.K_2:
                     modo_auto = False
+                    modo_manual = False
                     modo_2_balas = True
                     modo_3_balas = False
                     menu_activo = False
                 elif evento.key == pygame.K_3:
                     modo_auto = False
+                    modo_manual = False
                     modo_2_balas = False
                     modo_3_balas = True
                     menu_activo = False
@@ -451,7 +651,8 @@ def main():
                 if evento.key == pygame.K_p:  # Presiona 'p' para pausar el juego
                     pausa_juego()
                 if evento.key == pygame.K_q:  # Presiona 'q' para terminar el juego
-                    print("Juego terminado. Datos recopilados:", datos_modelo)
+                    # print("Juego terminado. Datos recopilados:", datos_modelo)
+                    print("Juego terminado.")
                     pygame.quit()
                     exit()
 
@@ -483,7 +684,7 @@ def main():
 
         # Actualizar la pantalla
         pygame.display.flip()
-        reloj.tick(30)  # Limitar el juego a 30 FPS
+        reloj.tick(60)  # Limitar el juego a 30 FPS
 
     pygame.quit()
 
