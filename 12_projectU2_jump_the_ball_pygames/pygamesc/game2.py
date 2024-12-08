@@ -125,7 +125,7 @@ def predecir_salto(velocidad_bala, desplazamiento_bala):
     global decision_tree_trained
     if decision_tree_trained is not None:
         prediccion = decision_tree_trained.predict([[velocidad_bala, desplazamiento_bala]])
-        print("PREDICción de salto: " + prediccion[0] + ' | ' + prediccion)
+        print("PREDICción de salto: " + str(prediccion[0]))
         if prediccion[0] == '1':
             print("RETURN DESITION TREE WITH TRUE")
             return True
@@ -305,15 +305,6 @@ def update():
     if jugador.colliderect(bala):
         print("Colisión detectada!")
         reiniciar_juego()  # Terminar el juego y mostrar el menú
-    
-    # print('update...')
-    
-    # if modo_decision_tree and decision_tree_trained is not None:
-    #     print('get prediction...')
-    #     desplazamiento_bala = bala.x - jugador.x
-    #     if predecir_salto(velocidad_bala, desplazamiento_bala):
-    #         print('prediction true...')
-    #         salto = True
 
     # Mover y dibujar la segunda bala si está en modo 2 o 3 balas
     if modo_2_balas or modo_3_balas:
@@ -632,7 +623,6 @@ def mostrar_menu():
                     menu_activo = False
                     cargar_modelo_decision_tree()
                     print('- - - - Option auto desition tree selected - - - -')
-                    # generate_desition_treee()
                 elif evento.key == pygame.K_m:
                     modo_auto = False
                     modo_manual = True
@@ -668,14 +658,15 @@ def mostrar_menu():
 
 # Función para reiniciar el juego tras la colisión
 def reiniciar_juego():
-    global menu_activo, jugador, bala, nave, bala_disparada, salto, en_suelo, bala2_disparada, bala3_disparada
+    global menu_activo, jugador, bala, nave, bala_disparada, salto, en_suelo, bala2_disparada, bala3_disparada, salto_altura
     
     menu_activo = True  # Activar de nuevo el menú
-    jugador.x, jugador.y = 50, h - 100  # Reiniciar ción del jugadorposi
+    jugador.x, jugador.y = 50, h - 100  # Reiniciar posición del jugador
     bala.x = w - 50  # Reiniciar posición de la bala
     nave.x, nave.y = w - 100, h - 100  # Reiniciar posición de la nave
     bala_disparada = False
     salto = False
+    salto_altura = 15  # Restablecer la velocidad de salto
     en_suelo = True
     # Reiniciar la segunda bala
     bala2.x = random.randint(0, w - 16)
@@ -707,11 +698,11 @@ def main():
                     print('saltando.....')
                     salto = True
                     en_suelo = False
+                    salto_altura = 15  # Restablecer la velocidad de salto al iniciar un nuevo salto
                 
                 if evento.key == pygame.K_p:  # Presiona 'p' para pausar el juego
                     pausa_juego()
                 if evento.key == pygame.K_q:  # Presiona 'q' para terminar el juego
-                    # print("Juego terminado. Datos recopilados:", datos_modelo)
                     print("Juego terminado.")
                     pygame.quit()
                     exit()
@@ -727,17 +718,14 @@ def main():
                 
             elif modo_decision_tree:
                 if modo_decision_tree and decision_tree_trained is not None:
-                    print('get prediction...')
                     desplazamiento_bala = bala.x - jugador.x
-                    if predecir_salto(velocidad_bala, desplazamiento_bala):
-                        print('presdecir salto IF')
-                        if en_suelo:
-                            print('saltando... prediction true...')
-                            salto = True
-                            en_suelo = False
-                            manejar_salto()
-                        
+                    if predecir_salto(velocidad_bala, desplazamiento_bala) and en_suelo:
+                        print('saltando... prediction true...')
+                        salto = True
+                        en_suelo = False
                 
+                if salto:
+                    manejar_salto()
             
             # Move right or left
             keys = pygame.key.get_pressed()
@@ -756,11 +744,10 @@ def main():
             if not bala_disparada:
                 disparar_bala()
             update()
-            
 
         # Actualizar la pantalla
         pygame.display.flip()
-        reloj.tick(60)  # Limitar el juego a 30 FPS
+        reloj.tick(60)  # Limitar el juego a 60 FPS
 
     pygame.quit()
 
