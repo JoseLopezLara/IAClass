@@ -1,0 +1,25 @@
+digraph Tree {
+node [shape=box, style="filled, rounded", color="black", fontname="helvetica"] ;
+edge [fontname="helvetica"] ;
+0 [label=<D. Bala &le; 51.0<br/>gini = 0.253<br/>samples = 168<br/>value = [143, 25]<br/>class = C. 0 (Suelo)>, fillcolor="#ea975c"] ;
+1 [label=<V. Bala &le; -7.0<br/>gini = 0.208<br/>samples = 17<br/>value = [2, 15]<br/>class = C. 1 (Salto)>, fillcolor="#53aae8"] ;
+0 -> 1 [labeldistance=2.5, labelangle=45, headlabel="True"] ;
+2 [label=<gini = 0.0<br/>samples = 2<br/>value = [2, 0]<br/>class = C. 0 (Suelo)>, fillcolor="#e58139"] ;
+1 -> 2 ;
+3 [label=<gini = 0.0<br/>samples = 15<br/>value = [0, 15]<br/>class = C. 1 (Salto)>, fillcolor="#399de5"] ;
+1 -> 3 ;
+4 [label=<D. Bala &le; 601.0<br/>gini = 0.124<br/>samples = 151<br/>value = [141, 10]<br/>class = C. 0 (Suelo)>, fillcolor="#e78a47"] ;
+0 -> 4 [labeldistance=2.5, labelangle=-45, headlabel="False"] ;
+5 [label=<gini = 0.0<br/>samples = 127<br/>value = [127, 0]<br/>class = C. 0 (Suelo)>, fillcolor="#e58139"] ;
+4 -> 5 ;
+6 [label=<V. Bala &le; -7.0<br/>gini = 0.486<br/>samples = 24<br/>value = [14, 10]<br/>class = C. 0 (Suelo)>, fillcolor="#f8dbc6"] ;
+4 -> 6 ;
+7 [label=<V. Bala &le; -14.0<br/>gini = 0.165<br/>samples = 11<br/>value = [1, 10]<br/>class = C. 1 (Salto)>, fillcolor="#4da7e8"] ;
+6 -> 7 ;
+8 [label=<gini = 0.0<br/>samples = 1<br/>value = [1, 0]<br/>class = C. 0 (Suelo)>, fillcolor="#e58139"] ;
+7 -> 8 ;
+9 [label=<gini = 0.0<br/>samples = 10<br/>value = [0, 10]<br/>class = C. 1 (Salto)>, fillcolor="#399de5"] ;
+7 -> 9 ;
+10 [label=<gini = 0.0<br/>samples = 13<br/>value = [13, 0]<br/>class = C. 0 (Suelo)>, fillcolor="#e58139"] ;
+6 -> 10 ;
+}
