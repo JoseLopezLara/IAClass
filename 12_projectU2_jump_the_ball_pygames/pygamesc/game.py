@@ -13,6 +13,12 @@ from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeClassifier, export_graphviz
 import graphviz
 import joblib
+import numpy as np
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense
+from tensorflow.keras.models import save_model, load_model
+from sklearn.model_selection import train_test_split
+
 
 
 directory_to_save_datasets = 'C:/git/IAClass/12_projectU2_jump_the_ball_pygames/datasets/'
@@ -108,28 +114,76 @@ velocidad_bala3_x = 0
 velocidad_bala3_y = 0
 bala3_disparada = False
 
+
 # Variables para el fondo en movimiento
 fondo_x1 = 0
 fondo_x2 = w
 
-
-### ---------------- DESICITION TREE --------------- ###  
+### ---------------- NEURAL NETWORK ---------------- ###  
 ### ------------------------------------------------ ###     
 def cargar_modelo_neural_network():
     global neural_network_trained
     try:
-
-        print("neural network model cargado exitosamente.")
+        model_path = os.path.join(directory_to_save_neural_network, 'neural_network_model.keras')
+        neural_network_trained = load_model(model_path)
+        print("Modelo de red neuronal cargado exitosamente.")
     except:
-        print("No se pudo cargar el neural network model")
+        print("No se pudo cargar el modelo de red neuronal")
 
 def predecir_salto_neural_network(velocidad_bala, desplazamiento_bala):
+    if neural_network_trained is None:
+        print("El modelo de red neuronal no está cargado.")
+        return False
 
-    global neural_network_trained
+    # Preparar los datos de entrada
+    input_data = np.array([[velocidad_bala, desplazamiento_bala]])
+
+    # Realizar la predicción
+    prediction = neural_network_trained.predict(input_data)
+
+    # La predicción será un número entre 0 y 1
+    # Podemos establecer un umbral, por ejemplo, 0.5
+    return prediction[0][0] > 0.5
 
 def generate_neural_network():
     global last_csv_path_saved_for_horizontal_ball, directory_to_save_neural_network
-        
+    
+    # Cargar el dataset
+    df = pd.read_csv(os.path.join(last_csv_path_saved_for_horizontal_ball))
+    
+    # Separar características (X) y etiquetas (y)
+    X = df[['Velocidad Bala', 'Desplazamiento Bala']].values
+    y = df['Estatus Salto'].values
+
+    # Dividir los datos en conjuntos de entrenamiento y prueba
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+    # Crear el modelo de red neuronal
+    model = Sequential([
+        Dense(8, input_dim=2, activation='relu'),
+        Dense(4, activation='relu'),
+        Dense(1, activation='sigmoid')
+    ])
+
+    print("Before to compile...")
+    # Compilar el modelo
+    model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+
+    # Entrenar el modelo
+    model.fit(X_train, y_train, epochs=50, batch_size=32, validation_split=0.2, verbose=1)
+
+    print("After fit...")
+
+    # Evaluar el modelo
+    loss, accuracy = model.evaluate(X_test, y_test, verbose=0)
+    print(f"\nPrecisión en el conjunto de prueba: {accuracy:.2f}")
+
+    print("Before to save...")
+
+    # Guardar el modelo
+    save_model(model, os.path.join(directory_to_save_neural_network, 'neural_network_model.keras'))
+
+    print("Modelo de red neuronal generado y guardado exitosamente.")
  ### ---------------- DESICITION TREE --------------- ###  
  ### ------------------------------------------------ ###     
 
@@ -626,7 +680,7 @@ def train_models():
 # Función para mostrar el menú y seleccionar el modo de juego
 def mostrar_menu():
     global pausa, menu_activo, modo_auto, modo_manual, modo_2_balas, modo_3_balas
-    global modo_decision_tree, modo_manual, modo_auto
+    global modo_decision_tree, modo_manual, modo_auto, mode_neural_network
 
     pantalla.fill(NEGRO)
     
