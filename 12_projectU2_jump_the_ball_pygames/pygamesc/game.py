@@ -29,6 +29,7 @@ modo_decision_tree = False
 directory_to_save_neural_network = 'C:/git/IAClass/12_projectU2_jump_the_ball_pygames/neural_network/'
 neural_network_trained = None
 mode_neural_network = False
+prediction_counter = 0
 
 
 last_csv_path_saved_for_horizontal_ball = ''
@@ -139,7 +140,8 @@ def predecir_salto_neural_network(velocidad_bala, desplazamiento_bala):
     input_data = np.array([[velocidad_bala, desplazamiento_bala]])
 
     # Realizar la predicción
-    prediction = neural_network_trained.predict(input_data)
+    prediction = neural_network_trained.predict(input_data, verbose=0)
+    #prediction = neural_network_trained.predict(input_data)
 
     # La predicción será un número entre 0 y 1
     # Podemos establecer un umbral, por ejemplo, 0.5
@@ -776,7 +778,7 @@ def reiniciar_juego():
 def main():
     global salto, en_suelo, bala_disparada
     global modo_decision_tree, modo_manual, modo_auto
-    global bala, velocidad_bala, jugador
+    global bala, velocidad_bala, jugador, prediction_counter
 
     reloj = pygame.time.Clock()
     mostrar_menu()  # Mostrar el menú al inicio
@@ -820,14 +822,17 @@ def main():
                     manejar_salto()
                     
             elif mode_neural_network:
-                if mode_neural_network and neural_network_trained is not None:
-                    desplazamiento_bala = bala.x - jugador.x
-                    if predecir_salto_neural_network(velocidad_bala, desplazamiento_bala) and en_suelo:
-                        print('saltando... prediction true...')
-                        salto = True
-                        en_suelo = False
-                if salto:
-                    manejar_salto()
+                # This module oprand has used to minimize the calls to the neural network for predictions
+                prediction_counter += 1
+                if prediction_counter % 1 == 0:
+                    if mode_neural_network and neural_network_trained is not None:
+                        desplazamiento_bala = bala.x - jugador.x
+                        if predecir_salto_neural_network(velocidad_bala, desplazamiento_bala) and en_suelo:
+                            print('saltando... prediction true...')
+                            salto = True
+                            en_suelo = False
+                    if salto:
+                        manejar_salto()
             
             # Move right or left
             keys = pygame.key.get_pressed()
