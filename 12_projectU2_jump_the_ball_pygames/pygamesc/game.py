@@ -468,6 +468,8 @@ def pausa_juego():
         print("Juego pausado. Datos registrados hasta ahora:", datos_modelo)
         menu_activo = True
         mostrar_menu()
+        
+        
     else:
         print("Juego reanudado.")
 
@@ -697,6 +699,7 @@ def mostrar_menu():
                 exit()
             if evento.type == pygame.KEYDOWN:
                 if evento.key == pygame.K_d:
+                    print("Press d")
                     modo_auto = True
                     modo_decision_tree = True
                     mode_neural_network = False
@@ -708,6 +711,8 @@ def mostrar_menu():
                     cargar_modelo_decision_tree()
                     print('- - - - Option auto: desition tree selected - - - -')
                 elif evento.key == pygame.K_n:
+                    print("Press n")
+                    
                     modo_auto = True
                     modo_decision_tree = False
                     mode_neural_network = True
@@ -719,20 +724,33 @@ def mostrar_menu():
                     cargar_modelo_neural_network()
                     print('- - - - Option auto: neural network selected - - - -')
                 elif evento.key == pygame.K_m:
+                    print("Press m")
+                    
                     modo_auto = False
                     modo_manual = True
                     modo_auto = False
                     modo_decision_tree = False
                     modo_2_balas = False
                     modo_3_balas = False
+                    print("Press m2")
                     menu_activo = False
+                    print("Press m3")
+                    correr = True
+                    pausa = False
+                    #main()
                 elif evento.key == pygame.K_f:
+                    print("Press f")
+                    
                     train_models()
                     menu_activo = True
                 elif evento.key == pygame.K_g:
+                    print("Press g")
+
                     save_data_set()
                     menu_activo = True
                 elif evento.key == pygame.K_t:
+                    print("Press t")
+
                     trace_dataset()
                 elif evento.key == pygame.K_2:
                     modo_auto = False
@@ -751,6 +769,7 @@ def mostrar_menu():
                     pygame.quit()
                     exit()
 
+    pygame.display.flip()
 # Función para reiniciar el juego tras la colisión
 def reiniciar_juego():
     global menu_activo, jugador, bala, nave, bala_disparada, salto, en_suelo, bala2_disparada, bala3_disparada, salto_altura
@@ -773,17 +792,18 @@ def reiniciar_juego():
     bala3_disparada = False
     # Mostrar los datos recopilados hasta el momento
     print("Datos recopilados para el modelo: ", datos_modelo)
+    
+    datos_modelo = []
+    
     mostrar_menu()  # Mostrar el menú de nuevo para seleccionar modo
 
-def main():
+
+def run_any_mode(correr):
     global salto, en_suelo, bala_disparada
     global modo_decision_tree, modo_manual, modo_auto
     global bala, velocidad_bala, jugador, prediction_counter
-
+    pygame.display.flip()
     reloj = pygame.time.Clock()
-    mostrar_menu()  # Mostrar el menú al inicio
-    correr = True
-
     while correr:
         for evento in pygame.event.get():
             if evento.type == pygame.QUIT:
@@ -855,6 +875,17 @@ def main():
         # Actualizar la pantalla
         pygame.display.flip()
         reloj.tick(60)  # Limitar el juego a 60 FPS
+
+
+def main():
+    global salto, en_suelo, bala_disparada
+    global modo_decision_tree, modo_manual, modo_auto
+    global bala, velocidad_bala, jugador, prediction_counter
+
+    
+    mostrar_menu()  # Mostrar el menú al inicio
+    correr = True
+    run_any_mode(correr)
 
     pygame.quit()
 
